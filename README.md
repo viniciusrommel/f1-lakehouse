@@ -4,7 +4,7 @@ Pipeline de dados que pega telemetria real de Fórmula 1 (API [FastF1](https://g
 
 **Caminho:** PostgreSQL → Debezium (CDC) → Kafka (Avro + Schema Registry) → S3 Sink → AWS S3 → Databricks Auto Loader → Bronze (Delta + Unity Catalog) → dbt → Silver/Gold, orquestrado por Airflow. Um painel Streamlit dispara as ingestões e é auditado pelo mesmo CDC.
 
-> 📖 **[Leia o artigo completo aqui](LINK_DO_ARTIGO)** — a motivação, as decisões de arquitetura e os problemas reais encontrados no caminho. Este README é só a referência técnica rápida.
+> 📖 **[Leia o artigo completo aqui](https://medium.com/@vinirommel97/lakehouse-na-pr%C3%A1tica-cdc-delta-lake-e-databricks-em-um-pipeline-incremental-c870e4824047?postPublishedType=repub)** — a motivação, as decisões de arquitetura e os problemas reais encontrados no caminho. Este README é só a referência técnica rápida.
 
 Documentação gerada com Claude.
 
