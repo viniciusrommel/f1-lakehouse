@@ -1,0 +1,69 @@
+version: 2
+
+models:
+  - name: fact_driver_season_summary
+    description: "KPIs da temporada por piloto: volta mais rapida, ritmo medio, uso de pneu e consistencia."
+    columns:
+      - name: driver_code
+        tests: [not_null]
+      - name: fastest_lap_s
+        tests: [not_null]
+
+  - name: fact_race_pace_comparison
+    description: "Ritmo por corrida e por piloto: melhor volta, volta media e media por setor."
+    columns:
+      - name: driver_code
+        tests: [not_null]
+      - name: round
+        tests: [not_null]
+
+  - name: sector_dominance
+    description: >
+      Qual piloto dominou cada um dos 3 setores por corrida, no ritmo medio.
+      Grao (season, round).
+    columns:
+      - name: round
+        tests: [not_null]
+
+  - name: race_weekend_summary
+    description: >
+      Resumo da corrida no grao (season, round), juntando results, laps,
+      weather e race_control: vencedor, pole, ritmo, clima e interrupcoes.
+    columns:
+      - name: round
+        tests: [not_null]
+      # winner_code nao leva not_null: vem de LEFT JOIN e e nulo quando a
+      # corrida ainda nao tem resultado classificado.
+
+  - name: dim_driver_scd2
+    description: >
+      Dimensao SCD2 com o historico de (full_name, team, team_color) por
+      piloto. Grao (driver_code, valid_from_season, valid_from_round).
+    columns:
+      - name: driver_code
+        tests: [not_null]
+      - name: is_current
+        tests: [not_null]
+
+  - name: dim_team_scd2
+    description: >
+      Dimensao SCD2 com o historico de team_color por equipe. A chave natural
+      e o nome da equipe, pois a origem nao tem team_id estavel.
+    columns:
+      - name: team
+        tests: [not_null]
+      - name: is_current
+        tests: [not_null]
+
+  - name: mart_driver_race_result
+    description: >
+      Uma linha por piloto por corrida, no grao (season, round, driver_code).
+      Junta results e laps, busca nas dimensoes SCD2 o valor vigente na data
+      daquela corrida, e agrega fact_race_pace_comparison (mesmo grao) e
+      fact_driver_season_summary (grao de temporada) — e o unico modelo que
+      depende de outros modelos Gold, nao so de Silver.
+    columns:
+      - name: driver_code
+        tests: [not_null]
+      - name: round
+        tests: [not_null]

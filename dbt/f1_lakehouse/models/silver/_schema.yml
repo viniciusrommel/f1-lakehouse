@@ -1,0 +1,81 @@
+version: 2
+
+models:
+  - name: telemetry
+    description: >
+      Telemetria limpa vinda do CDC. Uma linha por amostra (cerca de 4 Hz),
+      com guardas de faixa em velocidade, acelerador, marcha e rotacao.
+    columns:
+      - name: event_id
+        description: PK do Postgres, unica por INSERT (nao e chave de negocio).
+      - name: driver_code
+        tests: [not_null]
+      - name: session_time_ms
+        tests: [not_null]
+      - name: speed_kph
+        description: Nulo quando fora da faixa de 0 a 400 km/h.
+
+  - name: laps
+    description: >
+      Voltas limpas. Composto do pneu normalizado, tempos fora da faixa de
+      60 s a 3600 s anulados e flag da volta mais rapida por sessao.
+    columns:
+      - name: driver_code
+        tests: [not_null]
+      - name: lap_number
+        tests: [not_null]
+      - name: compound
+        tests:
+          - accepted_values:
+              values: ['SOFT','MEDIUM','HARD','INTERMEDIATE','WET',
+                       'SUPERSOFT','ULTRASOFT','HYPERSOFT','SUPERHARD','UNKNOWN']
+
+  - name: weather
+    description: >
+      Amostras de clima da sessao (cerca de 1 por minuto). Leitura fora da
+      faixa fisica e anulada, nao descartada.
+    columns:
+      - name: event_id
+        tests: [not_null, unique]
+      - name: session_time_ms
+        tests: [not_null]
+
+  - name: race_control
+    description: >
+      Mensagens oficiais da direcao de prova (bandeiras, punicoes, safety car
+      e DRS), com texto normalizado e flags prontas para uso na Gold.
+    columns:
+      - name: event_id
+        tests: [not_null, unique]
+      - name: message
+        tests: [not_null]
+
+  - name: track_status
+    description: >
+      Mudancas de estado da pista ao longo da sessao. O codigo numerico e
+      traduzido para um rotulo legivel em status_label.
+    columns:
+      - name: event_id
+        tests: [not_null, unique]
+      - name: status_label
+        tests:
+          - accepted_values:
+              values: ['ALL_CLEAR','YELLOW','SAFETY_CAR','RED_FLAG',
+                       'VIRTUAL_SAFETY_CAR','VSC_ENDING','UNKNOWN']
+
+  - name: session_status
+    description: Ciclo de vida da sessao (iniciada, encerrada, finalizada).
+    columns:
+      - name: event_id
+        tests: [not_null, unique]
+
+  - name: results
+    description: >
+      Classificacao final, uma linha por piloto por sessao. Tempos de
+      qualificacao e de prova convertidos para segundos. is_dnf vem de uma
+      classified_position nao numerica.
+    columns:
+      - name: event_id
+        tests: [not_null, unique]
+      - name: driver_code
+        tests: [not_null]

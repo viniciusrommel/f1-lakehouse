@@ -1,0 +1,51 @@
+flowchart TD
+    subgraph SOURCE["Data Sources"]
+        F1["FastF1 API\n(telemetry, laps, weather, race control,\ntrack/session status, results)"]
+        UI["Streamlit control panel\n(season/GP/session/driver filters)"]
+    end
+
+    subgraph LOCAL["Local — Docker Compose"]
+        PG["PostgreSQL\n(OLTP source, wal_level=logical)"]
+        DBZ["Debezium\nPostgreSQL Source Connector\n(pgoutput, LSN-ordered)"]
+        SR["Confluent Schema Registry\n(Avro contract)"]
+        KAFKA["Apache Kafka\nf1cdc.public.* (8 topics)"]
+        SINK["Confluent S3 Sink Connector"]
+    end
+
+    subgraph AWS["AWS"]
+        S3["S3 — s3://f1-lakehouse-galgo/cdc/\n.avro, partitioned by hour"]
+    end
+
+    subgraph DBX["Databricks — Unity Catalog (f1)"]
+        AL["Auto Loader (cloudFiles)\nJob trigger: File arrival\ntrigger(availableNow=True)"]
+        B["BRONZE\nf1.bronze.*\nimmutable, append-only, all CDC ops"]
+        S["SILVER\nf1.silver.*\nincremental + merge, LSN dedup"]
+        G["GOLD\nf1.gold.*\nincremental + merge, partition-scoped"]
+        WH["Databricks SQL Warehouse\n(serverless)"]
+    end
+
+    subgraph ORCH["Orchestration — Airflow (local)"]
+        AIR["DAG f1_lakehouse_pipeline\none task per dbt model\ndbt build --select <model>\n(dbt-databricks, runs OUT to the Warehouse)"]
+    end
+
+    subgraph CONSUME["Consumption"]
+        BI["BI / SQL Editor\n(Databricks SQL Warehouse)"]
+    end
+
+    UI -- INSERT --> PG
+    F1 --> UI
+    PG -- WAL --> DBZ
+    DBZ -- Avro --> SR
+    DBZ --> KAFKA
+    KAFKA --> SINK
+    SINK -- .avro --> S3
+    S3 -- File arrival --> AL
+    AL --> B
+    AIR -- dbt build --> S
+    AIR -- dbt build --> G
+    B --> S --> G
+    G --> WH --> BI
+
+    style B fill:#cd7f32,color:#fff
+    style S fill:#c0c0c0,color:#000
+    style G fill:#ffd700,color:#000

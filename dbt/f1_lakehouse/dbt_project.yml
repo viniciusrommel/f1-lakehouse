@@ -1,0 +1,34 @@
+name: f1_lakehouse
+version: "1.0.0"
+config-version: 2
+
+profile: f1_lakehouse
+
+model-paths: ["models"]
+seed-paths: ["seeds"]
+macro-paths: ["macros"]
+snapshot-paths: ["snapshots"]
+analysis-paths: ["analyses"]
+test-paths: ["tests"]
+
+models:
+  f1_lakehouse:
+    silver:
+      +schema: silver
+      +file_format: delta
+      +materialized: incremental
+      +incremental_strategy: merge
+      # Permite o merge adicionar colunas novas sem ALTER manual
+      +on_schema_change: append_new_columns
+      +partition_by:
+        - season
+        - round
+        - session_type
+
+    gold:
+      +schema: gold
+      +file_format: delta
+      +materialized: incremental
+      # merge e nao insert_overwrite: o SQL Warehouse serverless do Databricks
+      # nao expoe spark.sql.sources.partitionOverwriteMode.
+      +incremental_strategy: merge

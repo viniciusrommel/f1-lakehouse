@@ -1,0 +1,34 @@
+{
+  "name": "f1-postgres-cdc",
+  "config": {
+    "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
+    "tasks.max": "1",
+
+    "database.hostname": "postgres",
+    "database.port": "5432",
+    "database.user": "f1user",
+    "database.password": "f1pass",
+    "database.dbname": "f1oltp",
+
+    "topic.prefix": "f1cdc",
+    "plugin.name": "pgoutput",
+    "publication.name": "f1_publication",
+    "slot.name": "f1_slot",
+
+    "table.include.list": "public.telemetry_events,public.lap_events,public.ingestion_jobs,public.weather_events,public.race_control_messages,public.track_status_events,public.session_status_events,public.session_results",
+
+    "snapshot.mode": "initial",
+    "tombstones.on.delete": "false",
+
+    "key.converter": "io.confluent.connect.avro.AvroConverter",
+    "key.converter.schema.registry.url": "http://schema-registry:8081",
+    "value.converter": "io.confluent.connect.avro.AvroConverter",
+    "value.converter.schema.registry.url": "http://schema-registry:8081",
+
+    "transforms": "unwrap",
+    "transforms.unwrap.type": "io.debezium.transforms.ExtractNewRecordState",
+    "transforms.unwrap.drop.tombstones": "true",
+    "transforms.unwrap.delete.handling.mode": "rewrite",
+    "transforms.unwrap.add.fields": "op,ts_ms,source.lsn,source.snapshot,source.table,source.schema"
+  }
+}

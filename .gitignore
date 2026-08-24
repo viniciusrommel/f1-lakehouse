@@ -1,0 +1,35 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+dist/
+build/
+.ruff_cache/
+
+# Ferramentas de editor / assistentes
+.claude/
+
+# dbt build artifacts
+dbt/**/target/
+dbt/**/logs/
+dbt/**/.user.yml
+dbt/**/dbt_packages/
+/logs/
+
+# Environment
+.env
+*.local
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# FastF1 cache (large binary files)
+**/fastf1_cache/
