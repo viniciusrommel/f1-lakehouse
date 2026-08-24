@@ -2,7 +2,7 @@
 
 Pipeline de dados que pega telemetria real de Fórmula 1 (API [FastF1](https://github.com/theOehrly/Fast-F1)), captura cada mudança via **CDC** e leva até um lakehouse na nuvem em camadas **Bronze/Silver/Gold**.
 
-**Caminho:** PostgreSQL → Debezium (CDC) → Kafka (Avro + Schema Registry) → S3 Sink → AWS S3 → Databricks Auto Loader → Bronze (Delta + Unity Catalog) → dbt → Silver/Gold, orquestrado por Airflow. Um painel Streamlit dispara as ingestões e é auditado pelo mesmo CDC.
+**Caminho:** PostgreSQL → Debezium (CDC) → Kafka (Avro + Schema Registry) → S3 Sink → AWS S3 (`.avro`) → Databricks Auto Loader lê o Avro e materializa como Parquet → Bronze (Delta + Unity Catalog) → dbt → Silver/Gold, orquestrado por Airflow. Um painel Streamlit dispara as ingestões e é auditado pelo mesmo CDC.
 
 > 📖 **[Leia o artigo completo aqui](https://medium.com/@vinirommel97/lakehouse-na-pr%C3%A1tica-cdc-delta-lake-e-databricks-em-um-pipeline-incremental-c870e4824047?postPublishedType=repub)** — a motivação, as decisões de arquitetura e os problemas reais encontrados no caminho. Este README é só a referência técnica rápida.
 
@@ -48,8 +48,8 @@ O foco aqui foi a **ingestão**: montar um pipeline CDC real, de ponta a ponta, 
 | Schema | Confluent Schema Registry | Contrato Avro entre produtor e consumidor |
 | Message bus | Apache Kafka + Zookeeper | Tópicos `f1cdc.public.*`, retenção de 7 dias |
 | Landing | Confluent S3 Sink Connector | Grava `.avro` no S3, particionado por hora |
-| Bronze | Databricks Auto Loader | `cloudFiles`, trigger por chegada de arquivo, always-on sem cluster 24/7 |
-| Formato | Delta Lake | ACID, time-travel, `MERGE`, schema evolution |
+| Bronze | Databricks Auto Loader | `cloudFiles`, trigger por chegada de arquivo, always-on sem cluster 24/7. Lê os `.avro` da landing e materializa como Parquet dentro da tabela Delta |
+| Formato | Delta Lake | Parquet + log de transações (`_delta_log/`): ACID, time-travel, `MERGE`, schema evolution |
 | Catálogo | Unity Catalog | `f1.bronze` / `f1.silver` / `f1.gold` |
 | Transformação | dbt (`dbt-databricks`) | Silver/Gold contra o SQL Warehouse |
 | Orquestração | Apache Airflow | Uma task por modelo dbt (`dbt build` = run + test) |
