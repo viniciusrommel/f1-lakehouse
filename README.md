@@ -6,6 +6,8 @@ Pipeline de dados que pega telemetria real de Fórmula 1 (API [FastF1](https://g
 
 > 📖 **[Leia o artigo completo aqui](LINK_DO_ARTIGO)** — a motivação, as decisões de arquitetura e os problemas reais encontrados no caminho. Este README é só a referência técnica rápida.
 
+Documentação gerada com Claude.
+
 ---
 
 ## Escopo do projeto
@@ -17,18 +19,18 @@ O foco aqui foi a **ingestão**: montar um pipeline CDC real, de ponta a ponta, 
 ## Arquitetura
 
 ```
-┌─────────────────────────── LOCAL (Docker Compose) ───────────────────────────┐
-│  FastF1 API → Streamlit/CLI → PostgreSQL (OLTP) → Debezium (WAL/CDC)         │
-│                                                        │ Avro                 │
-│                                    Schema Registry ◀── Kafka ──▶ S3 Sink      │
+┌─────────────────────────── LOCAL (Docker Compose) ──────────────────────────┐
+│  FastF1 API → Streamlit/CLI → PostgreSQL (OLTP) → Debezium (WAL/CDC)        │
+│                                                        │ Avro               │
+│                                    Schema Registry ◀── Kafka ──▶ S3 Sink   │
 └───────────────────────────────────────────────────────┼─────────────────────┘
                                                           │ .avro
                                                           ▼
 ┌──────────────────────────── CLOUD (AWS + Databricks) ────────────────────────┐
-│  s3://.../cdc/ → Auto Loader (File arrival) → Bronze (Delta, Unity Catalog)   │
-│                                                       │                       │
+│  s3://.../cdc/ → Auto Loader (File arrival) → Bronze (Delta, Unity Catalog)  │
+│                                                       │                      │
 │  Airflow (local) → dbt build --select <model> → Silver/Gold (SQL Warehouse)  │
-└────────────────────────────────────────────────────────────────────────────────┘
+└──────────────────────────────────────────────────────────────────────────────┘
 ```
 
 **Por que híbrido?** O CDC (Debezium/Kafka/S3 Sink) roda local, de graça, na máquina — só o Sink escreve no S3 real. O lakehouse (Bronze/Silver/Gold, catálogo, serving) roda no Databricks com Unity Catalog gerenciado. Passo a passo da migração local → cloud em [MIGRATION.md](MIGRATION.md).
